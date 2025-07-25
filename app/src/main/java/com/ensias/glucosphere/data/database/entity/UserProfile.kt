@@ -5,9 +5,10 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "user_profile")
 data class UserProfile(
-    @PrimaryKey val id: Int = 1,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val username: String,
     val age: Int,
     val targetGlucoseMin: Int,
-    val targetGlucoseMax: Int
+    val targetGlucoseMax: Int,
+    val isActive: Boolean = false // Track which user is currently active
 )

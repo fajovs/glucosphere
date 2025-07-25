@@ -1,7 +1,5 @@
 package com.ensias.glucosphere.navigation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,8 +20,8 @@ import com.ensias.glucosphere.ui.screens.medication.MedicationListScreen
 import com.ensias.glucosphere.ui.screens.medication.AddMedicationScreen
 import com.ensias.glucosphere.ui.screens.medication.MedicationDetailScreen
 import com.ensias.glucosphere.ui.screens.medication.EditMedicationScreen
+import com.ensias.glucosphere.ui.screens.login.LoginScreen
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun GlucoseTrackerApp() {
     val navController = rememberNavController()
@@ -42,10 +40,23 @@ fun GlucoseTrackerApp() {
                         popUpTo("splash") { inclusive = true }
                     }
                 },
-                onNavigateToProfileSetup = {
-                    navController.navigate("profile_setup") {
+                onNavigateToLogin = {
+                    navController.navigate("login") {
                         popUpTo("splash") { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToProfileSetup = {
+                    navController.navigate("profile_setup")
                 }
             )
         }
@@ -54,7 +65,7 @@ fun GlucoseTrackerApp() {
             ProfileSetupScreen(
                 onProfileCreated = {
                     navController.navigate("home") {
-                        popUpTo("profile_setup") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -67,9 +78,9 @@ fun GlucoseTrackerApp() {
                 onNavigateToSettings = { navController.navigate("settings") },
                 onNavigateToMedications = { navController.navigate("medications") },
                 onLogout = {
-                    // Clear user data and navigate to profile setup
+                    // Clear user data and navigate to login
                     splashViewModel.clearUserData()
-                    navController.navigate("profile_setup") {
+                    navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 }

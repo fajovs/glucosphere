@@ -7,12 +7,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
-
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,7 +60,6 @@ fun HomeScreen(
             }
 
             Row {
-
                 IconButton(onClick = onNavigateToSettings) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
@@ -111,7 +107,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Default.Create,
+                        Icons.Default.Menu,
                         contentDescription = "View Analysis",
                         modifier = Modifier.size(24.dp)
                     )

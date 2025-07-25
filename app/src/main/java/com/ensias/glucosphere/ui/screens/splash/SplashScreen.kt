@@ -14,14 +14,14 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     isUserProfileExists: Boolean?,
     onNavigateToHome: () -> Unit,
-    onNavigateToProfileSetup: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     LaunchedEffect(isUserProfileExists) {
-        delay(2000) // Show splash for 2 seconds
+        delay(2000)
         when (isUserProfileExists) {
             true -> onNavigateToHome()
-            false -> onNavigateToProfileSetup()
-            null -> {} // Still loading
+            false -> onNavigateToLogin()
+            null -> {}
         }
     }
 
@@ -39,7 +39,7 @@ fun SplashScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "GlucoseSphere",
+                text = "GlucoSphere",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )

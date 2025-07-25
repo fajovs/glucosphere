@@ -34,33 +34,8 @@ class SplashViewModel @Inject constructor(
     fun clearUserData() {
         viewModelScope.launch {
             try {
-                // Get all medications and cancel their reminders
-                medicationRepository.getMedicationsWithSchedules().collect { medicationsWithSchedules ->
-                    medicationsWithSchedules.forEach { medicationWithSchedules ->
-                        medicationWithSchedules.schedules.forEach { schedule ->
-                            // Cancel reminders would need to be implemented
-                            // reminderManager.cancelReminder(schedule.id)
-                        }
-                        // Delete medication (cascading delete will handle schedules and logs)
-                        medicationRepository.deleteMedication(medicationWithSchedules.medication)
-                    }
-                }
-
-                // Get all glucose readings and delete them
-                glucoseReadingRepository.getAllReadings().collect { readings ->
-                    readings.forEach { reading ->
-                        glucoseReadingRepository.deleteReading(reading)
-                    }
-                }
-
-                // Delete user profile
-                userProfileRepository.getUserProfile().collect { profile ->
-                    profile?.let {
-                        // Since we don't have a delete method, we can create a dummy profile
-                        // or implement a proper delete method in the repository
-                    }
-                }
-
+                // Just logout the current user instead of deleting all data
+                userProfileRepository.logout()
                 _isUserProfileExists.value = false
             } catch (e: Exception) {
                 // Handle error - for now just set to false to allow re-setup
