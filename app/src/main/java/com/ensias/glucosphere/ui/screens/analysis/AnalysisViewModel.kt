@@ -24,6 +24,7 @@ data class AnalysisUiState(
     val belowTargetPercentage: Int = 0,
     val aboveTargetPercentage: Int = 0,
     val insights: List<String> = emptyList(),
+    val chartData: List<Pair<Long, Int>> = emptyList(), // Timestamp to Glucose level
     val isLoading: Boolean = true
 )
 
@@ -81,6 +82,13 @@ class AnalysisViewModel @Inject constructor(
             readings
         )
 
+        // Prepare chart data (sorted by timestamp)
+        val chartData = readings
+            .sortedBy { it.timestamp }
+            .map { reading ->
+                Pair(reading.timestamp.time, reading.glucoseLevel)
+            }
+
         _uiState.value = AnalysisUiState(
             userProfile = profile,
             totalReadings = totalReadings,
@@ -92,6 +100,7 @@ class AnalysisViewModel @Inject constructor(
             belowTargetPercentage = belowTargetPercentage,
             aboveTargetPercentage = aboveTargetPercentage,
             insights = insights,
+            chartData = chartData,
             isLoading = false
         )
     }
@@ -123,7 +132,6 @@ class AnalysisViewModel @Inject constructor(
         }
 
         // Average glucose insights
-        val targetMid = (profile.targetGlucoseMin + profile.targetGlucoseMax) / 2
         when {
             averageGlucose in profile.targetGlucoseMin..profile.targetGlucoseMax -> {
                 insights.add("Your average glucose level ($averageGlucose mg/dL) is within your target range.")
@@ -141,6 +149,19 @@ class AnalysisViewModel @Inject constructor(
             insights.add("Try to log more readings for better insights and tracking.")
         } else if (totalReadings >= 30) {
             insights.add("Great job maintaining consistent glucose monitoring!")
+        }
+
+        // Trend analysis
+        if (readings.size >= 5) {
+            val recentReadings = readings.sortedByDescending { it.timestamp }.take(5)
+            val isIncreasing = recentReadings.zipWithNext().all { (a, b) -> a.glucoseLevel >= b.glucoseLevel }
+            val isDecreasing = recentReadings.zipWithNext().all { (a, b) -> a.glucoseLevel <= b.glucoseLevel }
+
+            if (isIncreasing) {
+                insights.add("Your glucose levels have been trending upward in recent readings.")
+            } else if (isDecreasing) {
+                insights.add("Your glucose levels have been trending downward in recent readings.")
+            }
         }
 
         return insights

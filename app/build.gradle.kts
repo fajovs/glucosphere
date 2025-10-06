@@ -95,7 +95,9 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
 
     // Charts
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
 
     // Date Picker
     implementation("io.github.vanpra.compose-material-dialogs:datetime:0.9.0")
