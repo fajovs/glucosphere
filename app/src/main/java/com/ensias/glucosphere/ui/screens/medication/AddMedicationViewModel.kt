@@ -1,11 +1,11 @@
 package com.ensias.glucosphere.ui.screens.medication
 
-import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ensias.glucosphere.data.database.entity.Medication
 import com.ensias.glucosphere.data.database.entity.MedicationSchedule
 import com.ensias.glucosphere.data.repository.MedicationRepository
+import com.ensias.glucosphere.data.repository.UserProfileRepository
 import com.ensias.glucosphere.notification.MedicationReminderManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import javax.inject.Inject
 import android.util.Log
-import androidx.annotation.RequiresApi
 
 data class AddMedicationUiState(
     val medicationName: String = "",
@@ -29,6 +28,7 @@ data class AddMedicationUiState(
 @HiltViewModel
 class AddMedicationViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
+    private val userProfileRepository: UserProfileRepository, // added to get active user ID
     private val reminderManager: MedicationReminderManager
 ) : ViewModel() {
 
@@ -79,7 +79,6 @@ class AddMedicationViewModel @Inject constructor(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun saveMedication() {
         val state = _uiState.value
         if (!state.isFormValid) return
@@ -88,34 +87,44 @@ class AddMedicationViewModel @Inject constructor(
             _uiState.value = state.copy(isLoading = true, errorMessage = "")
 
             try {
-                val medication = Medication(
-                    name = state.medicationName,
-                    dosage = state.dosage,
-                    instructions = state.instructions
-                )
+                val activeUser = userProfileRepository.getUserProfile().firstOrNull()
 
-                val medicationId = medicationRepository.insertMedication(medication)
-                Log.d("AddMedication", "Saved medication with ID: $medicationId")
-
-                // Save schedules and set up reminders
-                state.scheduleTimes.forEach { time ->
-                    val schedule = MedicationSchedule(
-                        medicationId = medicationId,
-                        timeHour = time.hour,
-                        timeMinute = time.minute,
-                        reminderEnabled = true
+                if (activeUser != null) {
+                    val medication = Medication(
+                        userId = activeUser.id,
+                        name = state.medicationName,
+                        dosage = state.dosage,
+                        instructions = state.instructions
                     )
 
-                    val scheduleId = medicationRepository.insertSchedule(schedule)
-                    Log.d("AddMedication", "Saved schedule with ID: $scheduleId at ${time.hour}:${time.minute}")
+                    val medicationId = medicationRepository.insertMedication(medication)
+                    Log.d("AddMedication", "Saved medication with ID: $medicationId for user: ${activeUser.id}")
 
-                    // Schedule reminder
-                    val savedSchedule = schedule.copy(id = scheduleId)
-                    reminderManager.scheduleReminder(medication.copy(id = medicationId), savedSchedule)
-                    Log.d("AddMedication", "Scheduled reminder for ${medication.name}")
+                    // Save schedules and set up reminders
+                    state.scheduleTimes.forEach { time ->
+                        val schedule = MedicationSchedule(
+                            medicationId = medicationId,
+                            timeHour = time.hour,
+                            timeMinute = time.minute,
+                            reminderEnabled = true
+                        )
+
+                        val scheduleId = medicationRepository.insertSchedule(schedule)
+                        Log.d("AddMedication", "Saved schedule with ID: $scheduleId at ${time.hour}:${time.minute}")
+
+                        // Schedule reminder
+                        val savedSchedule = schedule.copy(id = scheduleId)
+                        reminderManager.scheduleReminder(medication.copy(id = medicationId), savedSchedule)
+                        Log.d("AddMedication", "Scheduled reminder for ${medication.name}")
+                    }
+
+                    _uiState.value = state.copy(isLoading = false, isMedicationSaved = true)
+                } else {
+                    _uiState.value = state.copy(
+                        isLoading = false,
+                        errorMessage = "User profile not found"
+                    )
                 }
-
-                _uiState.value = state.copy(isLoading = false, isMedicationSaved = true)
             } catch (e: Exception) {
                 Log.e("AddMedication", "Error saving medication", e)
                 _uiState.value = state.copy(
@@ -126,7 +135,6 @@ class AddMedicationViewModel @Inject constructor(
         }
     }
 
-    // Test function to show notification immediately
     fun testNotification() {
         reminderManager.showTestNotification()
     }

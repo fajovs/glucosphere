@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ensias.glucosphere.data.database.entity.GlucoseReading
 import com.ensias.glucosphere.data.database.entity.ReadingType
 import com.ensias.glucosphere.data.repository.GlucoseReadingRepository
+import com.ensias.glucosphere.data.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,7 +24,8 @@ data class LogGlucoseUiState(
 
 @HiltViewModel
 class LogGlucoseViewModel @Inject constructor(
-    private val glucoseReadingRepository: GlucoseReadingRepository
+    private val glucoseReadingRepository: GlucoseReadingRepository,
+    private val userProfileRepository: UserProfileRepository // added to get active user ID
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LogGlucoseUiState())
@@ -65,15 +67,25 @@ class LogGlucoseViewModel @Inject constructor(
             _uiState.value = state.copy(isLoading = true, errorMessage = "")
 
             try {
-                val reading = GlucoseReading(
-                    glucoseLevel = state.glucoseLevel.toInt(),
-                    timestamp = Date(),
-                    notes = state.notes,
-                    readingType = state.selectedReadingType
-                )
+                val activeUser = userProfileRepository.getUserProfile().firstOrNull()
 
-                glucoseReadingRepository.insertReading(reading)
-                _uiState.value = state.copy(isLoading = false, isReadingSaved = true)
+                if (activeUser != null) {
+                    val reading = GlucoseReading(
+                        userId = activeUser.id,
+                        glucoseLevel = state.glucoseLevel.toInt(),
+                        timestamp = Date(),
+                        notes = state.notes,
+                        readingType = state.selectedReadingType
+                    )
+
+                    glucoseReadingRepository.insertReading(reading)
+                    _uiState.value = state.copy(isLoading = false, isReadingSaved = true)
+                } else {
+                    _uiState.value = state.copy(
+                        isLoading = false,
+                        errorMessage = "User profile not found"
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.value = state.copy(
                     isLoading = false,

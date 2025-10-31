@@ -7,15 +7,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MedicationDao {
-    @Query("SELECT * FROM medications WHERE isActive = 1 ORDER BY name")
-    fun getActiveMedications(): Flow<List<Medication>>
+    @Query("SELECT * FROM medications WHERE userId = :userId AND isActive = 1 ORDER BY name")
+    fun getActiveMedications(userId: Long): Flow<List<Medication>>
 
-    @Query("SELECT * FROM medications ORDER BY name")
-    fun getAllMedications(): Flow<List<Medication>>
+    @Query("SELECT * FROM medications WHERE userId = :userId ORDER BY name")
+    fun getAllMedications(userId: Int): Flow<List<Medication>>
 
     @Transaction
-    @Query("SELECT * FROM medications WHERE isActive = 1 ORDER BY name")
-    fun getMedicationsWithSchedules(): Flow<List<MedicationWithSchedules>>
+    @Query("SELECT * FROM medications WHERE userId = :userId AND isActive = 1 ORDER BY name")
+    fun getMedicationsWithSchedules(userId: Long): Flow<List<MedicationWithSchedules>>
 
     @Insert
     suspend fun insertMedication(medication: Medication): Long

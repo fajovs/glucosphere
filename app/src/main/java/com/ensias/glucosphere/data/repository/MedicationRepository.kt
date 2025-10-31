@@ -5,6 +5,8 @@ import com.ensias.glucosphere.data.database.dao.MedicationScheduleDao
 import com.ensias.glucosphere.data.database.dao.MedicationLogDao
 import com.ensias.glucosphere.data.database.entity.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.switchMap
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,12 +15,26 @@ import javax.inject.Singleton
 class MedicationRepository @Inject constructor(
     private val medicationDao: MedicationDao,
     private val medicationScheduleDao: MedicationScheduleDao,
-    private val medicationLogDao: MedicationLogDao
+    private val medicationLogDao: MedicationLogDao,
+    private val userProfileRepository: UserProfileRepository // added to get active user
 ) {
-    fun getActiveMedications(): Flow<List<Medication>> = medicationDao.getActiveMedications()
+    fun getActiveMedications(): Flow<List<Medication>> =
+        userProfileRepository.getUserProfile().flatMapLatest { profile ->
+            if (profile != null) {
+                medicationDao.getActiveMedications(profile.id)
+            } else {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            }
+        }
 
     fun getMedicationsWithSchedules(): Flow<List<MedicationWithSchedules>> =
-        medicationDao.getMedicationsWithSchedules()
+        userProfileRepository.getUserProfile().flatMapLatest { profile ->
+            if (profile != null) {
+                medicationDao.getMedicationsWithSchedules(profile.id)
+            } else {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            }
+        }
 
     suspend fun insertMedication(medication: Medication): Long =
         medicationDao.insertMedication(medication)
@@ -53,7 +69,13 @@ class MedicationRepository @Inject constructor(
 
     // Log methods
     fun getRecentMedicationLogs(): Flow<List<MedicationLog>> =
-        medicationLogDao.getRecentMedicationLogs()
+        userProfileRepository.getUserProfile().flatMapLatest { profile ->
+            if (profile != null) {
+                medicationLogDao.getRecentMedicationLogs(profile.id)
+            } else {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            }
+        }
 
     suspend fun insertMedicationLog(log: MedicationLog) =
         medicationLogDao.insertMedicationLog(log)

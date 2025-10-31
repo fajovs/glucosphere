@@ -7,11 +7,11 @@ import java.util.Date
 
 @Dao
 interface GlucoseReadingDao {
-    @Query("SELECT * FROM glucose_readings ORDER BY timestamp DESC")
-    fun getAllReadings(): Flow<List<GlucoseReading>>
+    @Query("SELECT * FROM glucose_readings WHERE userId = :userId ORDER BY timestamp DESC")
+    fun getAllReadings(userId: Long): Flow<List<GlucoseReading>>
 
-    @Query("SELECT * FROM glucose_readings WHERE timestamp >= :startDate ORDER BY timestamp DESC")
-    fun getReadingsFromDate(startDate: Date): Flow<List<GlucoseReading>>
+    @Query("SELECT * FROM glucose_readings WHERE userId = :userId AND timestamp >= :startDate ORDER BY timestamp DESC")
+    fun getReadingsFromDate(userId: Long, startDate: Date): Flow<List<GlucoseReading>>
 
     @Insert
     suspend fun insertReading(reading: GlucoseReading)
@@ -19,6 +19,6 @@ interface GlucoseReadingDao {
     @Delete
     suspend fun deleteReading(reading: GlucoseReading)
 
-    @Query("SELECT * FROM glucose_readings ORDER BY timestamp DESC LIMIT 10")
-    fun getRecentReadings(): Flow<List<GlucoseReading>>
+    @Query("SELECT * FROM glucose_readings WHERE userId = :userId ORDER BY timestamp DESC LIMIT 10")
+    fun getRecentReadings(userId: Long): Flow<List<GlucoseReading>>
 }

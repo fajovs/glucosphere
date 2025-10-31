@@ -7,11 +7,11 @@ import java.util.Date
 
 @Dao
 interface MedicationLogDao {
-    @Query("SELECT * FROM medication_logs ORDER BY scheduledTime DESC LIMIT 20")
-    fun getRecentMedicationLogs(): Flow<List<MedicationLog>>
+    @Query("SELECT ml.* FROM medication_logs ml INNER JOIN medications m ON ml.medicationId = m.id WHERE m.userId = :userId ORDER BY ml.scheduledTime DESC LIMIT 20")
+    fun getRecentMedicationLogs(userId: Long): Flow<List<MedicationLog>>
 
-    @Query("SELECT * FROM medication_logs WHERE scheduledTime >= :startDate ORDER BY scheduledTime DESC")
-    fun getMedicationLogsFromDate(startDate: Date): Flow<List<MedicationLog>>
+    @Query("SELECT ml.* FROM medication_logs ml INNER JOIN medications m ON ml.medicationId = m.id WHERE m.userId = :userId AND ml.scheduledTime >= :startDate ORDER BY ml.scheduledTime DESC")
+    fun getMedicationLogsFromDate(userId: Long, startDate: Date): Flow<List<MedicationLog>>
 
     @Insert
     suspend fun insertMedicationLog(log: MedicationLog)

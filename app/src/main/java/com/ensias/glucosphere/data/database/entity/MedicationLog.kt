@@ -14,8 +14,7 @@ import java.util.Date
             childColumns = ["medicationId"],
             onDelete = ForeignKey.CASCADE
         )
-    ],
-    indices = [androidx.room.Index(value = ["medicationId"])]
+    ]
 )
 data class MedicationLog(
     @PrimaryKey(autoGenerate = true)

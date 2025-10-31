@@ -134,16 +134,19 @@ class EditMedicationViewModel @Inject constructor(
             _uiState.value = state.copy(isLoading = true, errorMessage = "")
 
             try {
-                // Update medication
-                val medication = Medication(
-                    id = currentMedicationId,
+                // Get the existing medication from the database
+                val existingMedication = medicationRepository.getMedicationById(currentMedicationId)
+                    ?: throw Exception("Medication not found")
+
+                // Copy existing userId and other fields, update only what changed
+                val updatedMedication = existingMedication.copy(
                     name = state.medicationName,
                     dosage = state.dosage,
                     instructions = state.instructions,
                     isActive = true
                 )
 
-                medicationRepository.updateMedication(medication)
+                medicationRepository.updateMedication(updatedMedication)
 
                 // Cancel existing reminders
                 existingScheduleIds.forEach { scheduleId ->
@@ -163,10 +166,10 @@ class EditMedicationViewModel @Inject constructor(
                     )
 
                     val scheduleId = medicationRepository.insertSchedule(schedule)
+                    val savedSchedule = schedule.copy(id = scheduleId)
 
                     // Schedule reminder
-                    val savedSchedule = schedule.copy(id = scheduleId)
-                    reminderManager.scheduleReminder(medication, savedSchedule)
+                    reminderManager.scheduleReminder(updatedMedication, savedSchedule)
                 }
 
                 _uiState.value = state.copy(isLoading = false, isMedicationUpdated = true)
@@ -179,4 +182,5 @@ class EditMedicationViewModel @Inject constructor(
             }
         }
     }
+
 }
