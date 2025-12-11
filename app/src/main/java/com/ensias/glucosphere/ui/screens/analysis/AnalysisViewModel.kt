@@ -91,11 +91,7 @@ class AnalysisViewModel @Inject constructor(
 
         // Determine status of last reading
         val lastReadingStatus = if (lastReading != null) {
-            when {
-                lastReading.glucoseLevel < profile.targetGlucoseMin -> ReadingStatus.LOW
-                lastReading.glucoseLevel > profile.targetGlucoseMax -> ReadingStatus.HIGH
-                else -> ReadingStatus.NORMAL
-            }
+            determineReadingStatus(lastReading, profile)
         } else {
             ReadingStatus.NORMAL
         }
@@ -137,6 +133,47 @@ class AnalysisViewModel @Inject constructor(
             chartData = chartData,
             isLoading = false
         )
+    }
+
+    private fun determineReadingStatus(reading: GlucoseReading, profile: UserProfile): ReadingStatus {
+        val glucose = reading.glucoseLevel
+
+        return when (reading.readingType) {
+            ReadingType.FASTING -> {
+                val min = profile.fastingMin ?: profile.targetGlucoseMin
+                val max = profile.fastingMax ?: profile.targetGlucoseMax
+                when {
+                    glucose < min -> ReadingStatus.LOW
+                    glucose > max -> ReadingStatus.HIGH
+                    else -> ReadingStatus.NORMAL
+                }
+            }
+            ReadingType.BEFORE_MEAL -> {
+                val min = profile.preMealMin ?: profile.targetGlucoseMin
+                val max = profile.preMealMax ?: profile.targetGlucoseMax
+                when {
+                    glucose < min -> ReadingStatus.LOW
+                    glucose > max -> ReadingStatus.HIGH
+                    else -> ReadingStatus.NORMAL
+                }
+            }
+            ReadingType.AFTER_MEAL -> {
+                val max = profile.postMealMax ?: 180
+                when {
+                    glucose < profile.targetGlucoseMin -> ReadingStatus.LOW
+                    glucose > max -> ReadingStatus.HIGH
+                    else -> ReadingStatus.NORMAL
+                }
+            }
+            ReadingType.RANDOM -> {
+                val max = profile.randomMax ?: 200
+                when {
+                    glucose < profile.targetGlucoseMin -> ReadingStatus.LOW
+                    glucose > max -> ReadingStatus.HIGH
+                    else -> ReadingStatus.NORMAL
+                }
+            }
+        }
     }
 
     private fun generateInsights(

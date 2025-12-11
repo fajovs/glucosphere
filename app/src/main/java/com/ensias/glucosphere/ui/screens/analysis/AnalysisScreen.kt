@@ -1,6 +1,7 @@
 package com.ensias.glucosphere.ui.screens.analysis
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,16 +19,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.line.lineChart
+import com.patrykandpatrick.vico.compose.chart.line.lineSpec
 import com.patrykandpatrick.vico.core.axis.AxisPosition
-import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+
 import com.patrykandpatrick.vico.core.entry.entryModelOf
 import com.patrykandpatrick.vico.core.entry.entryOf
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+
+import androidx.compose.ui.graphics.nativeCanvas
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +106,7 @@ fun AnalysisScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Icon(
-                                Icons.Default.DateRange,
+                                Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -171,7 +178,7 @@ fun AnalysisScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Icon(
-                                Icons.Default.Info,
+                                Icons.Default.Menu,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -217,7 +224,7 @@ fun AnalysisScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                Icons.Default.CheckCircle,
+                                Icons.Default.Info,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(24.dp)
@@ -268,7 +275,7 @@ private fun LastReadingAlertCard(
 
     val icon = when (status) {
         ReadingStatus.LOW -> Icons.Default.Warning
-        ReadingStatus.HIGH -> Icons.Default.AddCircle
+        ReadingStatus.HIGH -> Icons.Default.Warning
         ReadingStatus.NORMAL -> Icons.Default.CheckCircle
     }
 
@@ -375,28 +382,122 @@ private fun GlucoseTrendChart(
 
     val chartEntryModel = entryModelOf(entries)
 
-    Chart(
-        chart = lineChart(
-            targetVerticalAxisPosition = AxisPosition.Vertical.Start
-        ),
-        model = chartEntryModel,
-        startAxis = rememberStartAxis(
-            title = "mg/dL"
-        ),
-        bottomAxis = rememberBottomAxis(
-            title = "Date",
-            valueFormatter = AxisValueFormatter { value, _ ->
-                val index = value.toInt()
-                if (index in chartData.indices) {
-                    val timestamp = chartData[index].first
-                    SimpleDateFormat("MM/dd", Locale.getDefault()).format(Date(timestamp))
-                } else ""
-            }
-        ),
+    val chartWidth = if (chartData.size > 15) {
+        (chartData.size * 40).dp
+    } else {
+        800.dp  // Default width for smaller datasets
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-    )
+            .padding(bottom = 16.dp)
+    ) {
+        // Y-axis stays fixed
+        Box(
+            modifier = Modifier
+                .width(60.dp)
+                .height(300.dp)
+        ) {
+            Chart(
+                chart = lineChart(
+                    targetVerticalAxisPosition = AxisPosition.Vertical.Start,
+                    lines = listOf(
+                        lineSpec(
+                            lineColor = Color(0xFF4CAF50),
+                            lineThickness = 2.dp
+                        )
+                    )
+                ),
+                model = chartEntryModel,
+                startAxis = rememberStartAxis(
+                    title = "mg/dL"
+                ),
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+        }
+
+        // Scrollable chart data area with points and values
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .horizontalScroll(rememberScrollState())
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .height(300.dp)
+                    .width(chartWidth)
+            ) {
+                // Calculate chart dimensions
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val padding = 40.dp.toPx()
+                val chartAreaWidth = canvasWidth - padding * 2
+                val chartAreaHeight = canvasHeight - padding * 2
+
+                // Find min and max for scaling
+                val minGlucose = chartData.minOfOrNull { it.second } ?: 0
+                val maxGlucose = chartData.maxOfOrNull { it.second } ?: 180
+                val glucoseRange = (maxGlucose - minGlucose).coerceAtLeast(1)
+
+                // Draw reference lines
+                drawLine(
+                    color = Color(0xFFE0E0E0),
+                    start = Offset(padding, padding),
+                    end = Offset(canvasWidth - padding, padding),
+                    strokeWidth = 1f
+                )
+                drawLine(
+                    color = Color(0xFFE0E0E0),
+                    start = Offset(padding, canvasHeight - padding),
+                    end = Offset(canvasWidth - padding, canvasHeight - padding),
+                    strokeWidth = 1f
+                )
+
+                // Draw data points and values
+                chartData.forEachIndexed { index, (_, glucose) ->
+                    val x = padding + (index.toFloat() / (chartData.size - 1).coerceAtLeast(1)) * chartAreaWidth
+                    val y = canvasHeight - padding - ((glucose - minGlucose).toFloat() / glucoseRange) * chartAreaHeight
+
+                    // Draw point
+                    drawCircle(
+                        color = Color(0xFF4CAF50),
+                        radius = 6.dp.toPx(),
+                        center = Offset(x, y)
+                    )
+
+                    // Draw value text above point
+                    drawContext.canvas.nativeCanvas.apply {
+                        val paint = android.graphics.Paint().apply {
+                            color = android.graphics.Color.BLACK
+                            textSize = 28f
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                        drawText("$glucose", x, y - 15.dp.toPx(), paint)
+                    }
+                }
+
+                // Draw line connecting points
+                if (chartData.size > 1) {
+                    for (i in 0 until chartData.size - 1) {
+                        val x1 = padding + (i.toFloat() / (chartData.size - 1)) * chartAreaWidth
+                        val y1 = canvasHeight - padding - ((chartData[i].second - minGlucose).toFloat() / glucoseRange) * chartAreaHeight
+
+                        val x2 = padding + ((i + 1).toFloat() / (chartData.size - 1)) * chartAreaWidth
+                        val y2 = canvasHeight - padding - ((chartData[i + 1].second - minGlucose).toFloat() / glucoseRange) * chartAreaHeight
+
+                        drawLine(
+                            color = Color(0xFF4CAF50),
+                            start = Offset(x1, y1),
+                            end = Offset(x2, y2),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

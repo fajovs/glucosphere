@@ -25,7 +25,7 @@ import com.ensias.glucosphere.data.database.dao.MedicationLogDao
         MedicationSchedule::class,
         MedicationLog::class
     ],
-    version = 4, // Increment version for schema change
+    version = 5, // Increment version for schema change
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
