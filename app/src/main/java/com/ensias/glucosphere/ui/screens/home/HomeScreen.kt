@@ -7,9 +7,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Menu
+
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +32,7 @@ fun HomeScreen(
     onNavigateToAnalysis: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToMedications: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -77,60 +81,74 @@ fun HomeScreen(
 
         // Quick Actions
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // 1. Force the Row to match the height of the tallest child
+                .height(IntrinsicSize.Max),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val cardModifier = Modifier
+                .weight(1f)
+                // 2. Tell each card to fill that maximum height
+                .fillMaxHeight()
+
             Card(
-                modifier = Modifier.weight(1f),
+                modifier = cardModifier,
                 onClick = onNavigateToLogGlucose
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center // Optional: centers icon/text vertically
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Log Glucose",
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Log Glucose", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
             Card(
-                modifier = Modifier.weight(1f),
+                modifier = cardModifier,
                 onClick = onNavigateToAnalysis
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        Icons.Default.Menu,
-                        contentDescription = "View Analysis",
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Analysis", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
             Card(
-                modifier = Modifier.weight(1f),
+                modifier = cardModifier,
                 onClick = onNavigateToMedications
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        Icons.Default.AddCircle,
-                        contentDescription = "Medications",
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.AddCircle, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Medications", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("Medications", fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Card(
+                modifier = cardModifier,
+                onClick = onNavigateToHistory
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.List, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("History", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }

@@ -14,6 +14,11 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+data class InsightItem(
+    val text: String,
+    val citationUrl: String? = null
+)
+
 data class AnalysisUiState(
     val userProfile: UserProfile? = null,
     val lastReading: GlucoseReading? = null,
@@ -28,7 +33,7 @@ data class AnalysisUiState(
     val inTargetPercentage: Int = 0,
     val belowTargetPercentage: Int = 0,
     val aboveTargetPercentage: Int = 0,
-    val insights: List<String> = emptyList(),
+    val insights: List<InsightItem> = emptyList(),
     val chartData: List<Pair<Long, Int>> = emptyList(),
     val isLoading: Boolean = true
 )
@@ -186,11 +191,11 @@ class AnalysisViewModel @Inject constructor(
         aboveTargetPercentage: Int,
         averageGlucose: Int,
         readings: List<GlucoseReading>
-    ): List<String> {
-        val insights = mutableListOf<String>()
+    ): List<InsightItem> {
+        val insights = mutableListOf<InsightItem>()
 
         if (lastReading == null) {
-            return listOf("No glucose readings yet. Log your first reading to get started!")
+            return listOf(InsightItem("No glucose readings yet. Log your first reading to get started!"))
         }
 
         val readingTypeInsights = generateReadingTypeInsights(lastReading, profile)
@@ -202,9 +207,9 @@ class AnalysisViewModel @Inject constructor(
         val minutesAgo = TimeUnit.MILLISECONDS.toMinutes(timeSinceReading)
 
         when {
-            hoursAgo >= 24 -> insights.add("It's been ${hoursAgo / 24} days since your last reading. Regular monitoring is important!")
-            hoursAgo > 0 -> insights.add("Last reading was ${hoursAgo} hours ago.")
-            minutesAgo > 0 -> insights.add("Last reading was ${minutesAgo} minutes ago.")
+            hoursAgo >= 24 -> insights.add(InsightItem("It's been ${hoursAgo / 24} days since your last reading. Regular monitoring is important!"))
+            hoursAgo > 0 -> insights.add(InsightItem("Last reading was ${hoursAgo} hours ago."))
+            minutesAgo > 0 -> insights.add(InsightItem("Last reading was ${minutesAgo} minutes ago."))
         }
 
         // Overall trend
@@ -212,11 +217,11 @@ class AnalysisViewModel @Inject constructor(
             val recentReadings = readings.sortedByDescending { it.timestamp }.take(5)
             val trend = when {
                 recentReadings.zipWithNext().all { (a, b) -> a.glucoseLevel >= b.glucoseLevel } ->
-                    "📈 Your recent glucose levels are trending upward."
+                    InsightItem("📈 Your recent glucose levels are trending upward.")
                 recentReadings.zipWithNext().all { (a, b) -> a.glucoseLevel <= b.glucoseLevel } ->
-                    "📉 Your recent glucose levels are trending downward."
+                    InsightItem("📉 Your recent glucose levels are trending downward.")
                 else ->
-                    "Your recent glucose levels are stable with fluctuations."
+                    InsightItem("Your recent glucose levels are stable with fluctuations.")
             }
             insights.add(trend)
         }
@@ -224,17 +229,17 @@ class AnalysisViewModel @Inject constructor(
         // Control quality feedback
         if (totalReadings >= 30) {
             when {
-                inTargetPercentage >= 80 -> insights.add("✓ Excellent glucose control! Keep up the great work.")
-                inTargetPercentage >= 60 -> insights.add("Good glucose control. Continue monitoring and maintaining your routine.")
-                else -> insights.add("Your glucose control needs attention. Consider consulting with your healthcare provider.")
+                inTargetPercentage >= 80 -> insights.add(InsightItem("✓ Excellent glucose control! Keep up the great work."))
+                inTargetPercentage >= 60 -> insights.add(InsightItem("Good glucose control. Continue monitoring and maintaining your routine."))
+                else -> insights.add(InsightItem("Your glucose control needs attention. Consider consulting with your healthcare provider."))
             }
         }
 
         return insights
     }
 
-    private fun generateReadingTypeInsights(reading: GlucoseReading, profile: UserProfile): List<String> {
-        val insights = mutableListOf<String>()
+    private fun generateReadingTypeInsights(reading: GlucoseReading, profile: UserProfile): List<InsightItem> {
+        val insights = mutableListOf<InsightItem>()
         val glucose = reading.glucoseLevel
 
         val minTarget = profile.targetGlucoseMin
@@ -249,19 +254,19 @@ class AnalysisViewModel @Inject constructor(
 
                 when {
                     glucose < fastingMin -> {
-                        insights.add("⚠️ WARNING: Your fasting glucose (${glucose} mg/dL) is critically low.")
-                        insights.add("Advice: Eat a small carbohydrate snack before bed or discuss your medication with your doctor.")
-                        insights.add("⚠️ Low fasting glucose may lead to dizziness, fatigue, or even fainting if not addressed.")
+                        insights.add(InsightItem("⚠️ WARNING: Your fasting glucose (${glucose} mg/dL) is critically low.", "https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose"))
+                        insights.add(InsightItem("Advice: Eat a small carbohydrate snack before bed or discuss your medication with your doctor.", "https://www.mayoclinic.org/diseases-conditions/diabetes/expert-answers/diabetes/faq-20058372"))
+                        insights.add(InsightItem("⚠️ Low fasting glucose may lead to dizziness, fatigue, or even fainting if not addressed.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
                     }
                     glucose <= fastingMax -> {
-                        insights.add("✓ Your fasting glucose (${glucose} mg/dL) is within acceptable range. Great job maintaining stable overnight levels!")
-                        insights.add("Advice: Keep following your routine and stay consistent with bedtime habits and medication.")
-                        insights.add("Continue monitoring — maintaining stability overnight helps prevent long-term complications.")
+                        insights.add(InsightItem("✓ Your fasting glucose (${glucose} mg/dL) is within acceptable range. Great job maintaining stable overnight levels!", "https://www.healthline.com/health/diabetes/normal-blood-sugar-level"))
+                        insights.add(InsightItem("Advice: Keep following your routine and stay consistent with bedtime habits and medication.", "https://www.mayoclinic.org/diseases-conditions/diabetes/in-depth/diabetes-management/art-20047963"))
+                        insights.add(InsightItem("Continue monitoring — maintaining stability overnight helps prevent long-term complications.", "https://www.bannerhealth.com/services/diabetes/complications/monitoring-importance"))
                     }
                     glucose > fastingMax -> {
-                        insights.add("⚠️ ALERT: Your fasting glucose (${glucose} mg/dL) is higher than your target of ${fastingMax} mg/dL.")
-                        insights.add("Advice: Avoid late-night snacks high in carbs and review your insulin or medication timing.")
-                        insights.add("⚠️ Repeated high fasting glucose can increase risk of chronic hyperglycemia and early morning fatigue.")
+                        insights.add(InsightItem("⚠️ ALERT: Your fasting glucose (${glucose} mg/dL) is higher than your target of ${fastingMax} mg/dL.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
+                        insights.add(InsightItem("Advice: Avoid late-night snacks high in carbs and review your insulin or medication timing.", "https://medlineplus.gov/ency/patientinstructions/000322.htm"))
+                        insights.add(InsightItem("⚠️ Repeated high fasting glucose can increase risk of chronic hyperglycemia and early morning fatigue.", "https://diabetes.org/living-with-diabetes/treatment-care/hyperglycemia"))
                     }
                 }
             }
@@ -269,19 +274,19 @@ class AnalysisViewModel @Inject constructor(
                 // Before meal: use user's target range
                 when {
                     glucose < minTarget -> {
-                        insights.add("⚠️ WARNING: Your pre-meal glucose (${glucose} mg/dL) is below your target of ${minTarget} mg/dL.")
-                        insights.add("Advice: Eat a small snack or fruit before your meal to prevent further drop.")
-                        insights.add("⚠️ Skipping meals or overdosing insulin could cause severe hypoglycemia, which may lead to confusion or shakiness.")
+                        insights.add(InsightItem("⚠️ WARNING: Your pre-meal glucose (${glucose} mg/dL) is below your target of ${minTarget} mg/dL.", "https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose"))
+                        insights.add(InsightItem("Advice: Eat a small snack or fruit before your meal to prevent further drop.", "https://www.mayoclinic.org/diseases-conditions/diabetes/expert-answers/diabetes/faq-20058372"))
+                        insights.add(InsightItem("⚠️ Skipping meals or overdosing insulin could cause severe hypoglycemia, which may lead to confusion or shakiness.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
                     }
                     glucose <= maxTarget -> {
-                        insights.add("✓ Your pre-meal glucose (${glucose} mg/dL) is within your target range (${minTarget}-${maxTarget} mg/dL).")
-                        insights.add("Advice: Good job! Keep meals consistent and balanced.")
-                        insights.add("Maintaining steady pre-meal readings helps avoid large post-meal spikes.")
+                        insights.add(InsightItem("✓ Your pre-meal glucose (${glucose} mg/dL) is within your target range (${minTarget}-${maxTarget} mg/dL).", "https://www.healthline.com/health/diabetes/normal-blood-sugar-level"))
+                        insights.add(InsightItem("Advice: Good job! Keep meals consistent and balanced.", "https://www.mayoclinic.org/diseases-conditions/diabetes/in-depth/diabetes-management/art-20047963"))
+                        insights.add(InsightItem("Maintaining steady pre-meal readings helps avoid large post-meal spikes.", "https://www.bannerhealth.com/services/diabetes/complications/monitoring-importance"))
                     }
                     glucose > maxTarget -> {
-                        insights.add("⚠️ ALERT: Your pre-meal glucose (${glucose} mg/dL) is above your target of ${maxTarget} mg/dL.")
-                        insights.add("Advice: Stay hydrated and recheck after your next meal; limit refined carbohydrates.")
-                        insights.add("⚠️ Frequent high pre-meal readings can raise your HbA1c and long-term risk for complications.")
+                        insights.add(InsightItem("⚠️ ALERT: Your pre-meal glucose (${glucose} mg/dL) is above your target of ${maxTarget} mg/dL.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
+                        insights.add(InsightItem("Advice: Stay hydrated and recheck after your next meal; limit refined carbohydrates.", "https://www.example.com/advice-high-pre-meal-glucose"))
+                        insights.add(InsightItem("⚠️ Frequent high pre-meal readings can raise your HbA1c and long-term risk for complications.", "https://diabetes.org/living-with-diabetes/treatment-care/hyperglycemia"))
                     }
                 }
             }
@@ -291,19 +296,19 @@ class AnalysisViewModel @Inject constructor(
 
                 when {
                     glucose < minTarget -> {
-                        insights.add("⚠️ WARNING: Your after-meal glucose (${glucose} mg/dL) is unusually low.")
-                        insights.add("Advice: Consider adjusting medication or increasing carbs at meals.")
-                        insights.add("⚠️ Post-meal lows may lead to sudden fatigue, sweating, or even fainting.")
+                        insights.add(InsightItem("⚠️ WARNING: Your after-meal glucose (${glucose} mg/dL) is unusually low.", "https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose"))
+                        insights.add(InsightItem("Advice: Consider adjusting medication or increasing carbs at meals.", "https://www.mayoclinic.org/diseases-conditions/diabetes/expert-answers/diabetes/faq-20058372"))
+                        insights.add(InsightItem("⚠️ Post-meal lows may lead to sudden fatigue, sweating, or even fainting.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
                     }
                     glucose <= afterMealMax -> {
-                        insights.add("✓ Your after-meal glucose (${glucose} mg/dL) is within acceptable range. Great job keeping post-meal sugar under control!")
-                        insights.add("Advice: Keep balancing your meals with protein, fiber, and activity.")
-                        insights.add("Stable post-meal glucose protects your heart and blood vessels long-term.")
+                        insights.add(InsightItem("✓ Your after-meal glucose (${glucose} mg/dL) is within acceptable range. Great job keeping post-meal sugar under control!", "https://www.healthline.com/health/diabetes/normal-blood-sugar-level"))
+                        insights.add(InsightItem("Advice: Keep balancing your meals with protein, fiber, and activity.", "https://www.mayoclinic.org/diseases-conditions/diabetes/in-depth/diabetes-management/art-20047963"))
+                        insights.add(InsightItem("Stable post-meal glucose protects your heart and blood vessels long-term.", "https://www.bannerhealth.com/services/diabetes/complications/monitoring-importance"))
                     }
                     glucose > afterMealMax -> {
-                        insights.add("⚠️ ALERT: Your after-meal glucose (${glucose} mg/dL) exceeds the recommended limit of ${afterMealMax} mg/dL.")
-                        insights.add("Advice: Try reducing portion size, increasing fiber, or taking a short walk after eating.")
-                        insights.add("⚠️ Frequent high post-meal spikes can cause tiredness and increase risk of neuropathy and heart issues.")
+                        insights.add(InsightItem("⚠️ ALERT: Your after-meal glucose (${glucose} mg/dL) exceeds the recommended limit of ${afterMealMax} mg/dL.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
+                        insights.add(InsightItem("Advice: Try reducing portion size, increasing fiber, or taking a short walk after eating.", "https://medlineplus.gov/ency/patientinstructions/000322.htm"))
+                        insights.add(InsightItem("⚠️ Frequent high post-meal spikes can cause tiredness and increase risk of neuropathy and heart issues.", "https://diabetes.org/living-with-diabetes/treatment-care/hyperglycemia"))
                     }
                 }
             }
@@ -311,19 +316,19 @@ class AnalysisViewModel @Inject constructor(
                 // Random reading: use user's target range as baseline
                 when {
                     glucose < minTarget -> {
-                        insights.add("⚠️ WARNING: Your random glucose (${glucose} mg/dL) is below your target minimum of ${minTarget} mg/dL.")
-                        insights.add("Advice: Eat a quick snack or drink something sugary if you feel weak.")
-                        insights.add("⚠️ Low sugar episodes can become dangerous if ignored, leading to disorientation or fainting.")
+                        insights.add(InsightItem("⚠️ WARNING: Your random glucose (${glucose} mg/dL) is below your target minimum of ${minTarget} mg/dL.", "https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose"))
+                        insights.add(InsightItem("Advice: Eat a quick snack or drink something sugary if you feel weak.", "https://www.mayoclinic.org/diseases-conditions/diabetes/expert-answers/diabetes/faq-20058372"))
+                        insights.add(InsightItem("⚠️ Low sugar episodes can become dangerous if ignored, leading to disorientation or fainting.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
                     }
                     glucose <= maxTarget -> {
-                        insights.add("✓ Your random glucose (${glucose} mg/dL) is within your target range (${minTarget}-${maxTarget} mg/dL).")
-                        insights.add("Advice: Nice work! Keep tracking your meals and activity for stable control.")
-                        insights.add("Consistent glucose stability helps prevent fatigue and long-term organ strain.")
+                        insights.add(InsightItem("✓ Your random glucose (${glucose} mg/dL) is within your target range (${minTarget}-${maxTarget} mg/dL).", "https://www.healthline.com/health/diabetes/normal-blood-sugar-level"))
+                        insights.add(InsightItem("Advice: Nice work! Keep tracking your meals and activity for stable control.", "https://www.mayoclinic.org/diseases-conditions/diabetes/in-depth/diabetes-management/art-20047963\n"))
+                        insights.add(InsightItem("Consistent glucose stability helps prevent fatigue and long-term organ strain.", "https://www.bannerhealth.com/services/diabetes/complications/monitoring-importance"))
                     }
                     glucose > maxTarget -> {
-                        insights.add("⚠️ ALERT: Your random glucose (${glucose} mg/dL) is higher than your target maximum of ${maxTarget} mg/dL.")
-                        insights.add("Advice: Drink water, rest, and check again in 2 hours to ensure it's not persistently high.")
-                        insights.add("⚠️ Persistent random highs could signal poor control or stress-related spikes; consult your healthcare provider if it continues.")
+                        insights.add(InsightItem("⚠️ ALERT: Your random glucose (${glucose} mg/dL) is higher than your target maximum of ${maxTarget} mg/dL.", "https://www.mayoclinic.org/diseases-conditions/hyperglycemia/symptoms-causes/syc-20373631"))
+                        insights.add(InsightItem("Advice: Drink water, rest, and check again in 2 hours to ensure it's not persistently high.", "https://medlineplus.gov/ency/patientinstructions/000322.htm"))
+                        insights.add(InsightItem("⚠️ Persistent random highs could signal poor control or stress-related spikes; consult your healthcare provider if it continues.", "https://diabetes.org/living-with-diabetes/treatment-care/hyperglycemia"))
                     }
                 }
             }

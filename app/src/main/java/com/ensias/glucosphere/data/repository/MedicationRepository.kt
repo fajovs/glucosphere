@@ -6,7 +6,7 @@ import com.ensias.glucosphere.data.database.dao.MedicationLogDao
 import com.ensias.glucosphere.data.database.entity.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.switchMap
+import kotlinx.coroutines.flow.flowOf
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,23 +16,26 @@ class MedicationRepository @Inject constructor(
     private val medicationDao: MedicationDao,
     private val medicationScheduleDao: MedicationScheduleDao,
     private val medicationLogDao: MedicationLogDao,
-    private val userProfileRepository: UserProfileRepository // added to get active user
+    private val userProfileRepository: UserProfileRepository
 ) {
     fun getActiveMedications(): Flow<List<Medication>> =
         userProfileRepository.getUserProfile().flatMapLatest { profile ->
             if (profile != null) {
                 medicationDao.getActiveMedications(profile.id)
             } else {
-                kotlinx.coroutines.flow.flowOf(emptyList())
+                flowOf(emptyList())
             }
         }
+
+    fun getActiveMedications(userId: Long): Flow<List<Medication>> =
+        medicationDao.getActiveMedications(userId)
 
     fun getMedicationsWithSchedules(): Flow<List<MedicationWithSchedules>> =
         userProfileRepository.getUserProfile().flatMapLatest { profile ->
             if (profile != null) {
                 medicationDao.getMedicationsWithSchedules(profile.id)
             } else {
-                kotlinx.coroutines.flow.flowOf(emptyList())
+                flowOf(emptyList())
             }
         }
 
@@ -73,12 +76,18 @@ class MedicationRepository @Inject constructor(
             if (profile != null) {
                 medicationLogDao.getRecentMedicationLogs(profile.id)
             } else {
-                kotlinx.coroutines.flow.flowOf(emptyList())
+                flowOf(emptyList())
             }
         }
 
+    fun getMedicationLogsForUser(userId: Long): Flow<List<MedicationLog>> =
+        medicationLogDao.getRecentMedicationLogs(userId)
+
     suspend fun insertMedicationLog(log: MedicationLog) =
         medicationLogDao.insertMedicationLog(log)
+
+    suspend fun updateMedicationLog(log: MedicationLog) =
+        medicationLogDao.updateMedicationLog(log)
 
     suspend fun getMedicationLogForDate(medicationId: Long, date: Date): List<MedicationLog> =
         medicationLogDao.getMedicationLogForDate(medicationId, date)

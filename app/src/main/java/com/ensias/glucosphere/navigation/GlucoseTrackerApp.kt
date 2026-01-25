@@ -21,6 +21,7 @@ import com.ensias.glucosphere.ui.screens.medication.AddMedicationScreen
 import com.ensias.glucosphere.ui.screens.medication.MedicationDetailScreen
 import com.ensias.glucosphere.ui.screens.medication.EditMedicationScreen
 import com.ensias.glucosphere.ui.screens.login.LoginScreen
+import com.ensias.glucosphere.ui.screens.history.HistoryScreen
 
 @Composable
 fun GlucoseTrackerApp() {
@@ -77,6 +78,7 @@ fun GlucoseTrackerApp() {
                 onNavigateToAnalysis = { navController.navigate("analysis") },
                 onNavigateToSettings = { navController.navigate("settings") },
                 onNavigateToMedications = { navController.navigate("medications") },
+                onNavigateToHistory = { navController.navigate("history") },
                 onLogout = {
                     // Clear user data and navigate to login
                     splashViewModel.clearUserData()
@@ -150,6 +152,12 @@ fun GlucoseTrackerApp() {
             val medicationId = backStackEntry.arguments?.getLong("medicationId") ?: -1L
             EditMedicationScreen(
                 medicationId = medicationId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("history") {
+            HistoryScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

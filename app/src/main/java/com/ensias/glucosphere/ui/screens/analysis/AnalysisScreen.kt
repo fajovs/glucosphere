@@ -1,5 +1,7 @@
 package com.ensias.glucosphere.ui.screens.analysis
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -19,13 +21,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.line.lineChart
 import com.patrykandpatrick.vico.compose.chart.line.lineSpec
 import com.patrykandpatrick.vico.core.axis.AxisPosition
-
+import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.entry.entryModelOf
 import com.patrykandpatrick.vico.core.entry.entryOf
 import java.text.SimpleDateFormat
@@ -34,7 +36,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 
 import androidx.compose.ui.graphics.nativeCanvas
-
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.clickable // Added missing clickable import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +109,7 @@ fun AnalysisScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Icon(
-                                Icons.Default.CheckCircle,
+                                Icons.Default.Search,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -178,7 +181,7 @@ fun AnalysisScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Icon(
-                                Icons.Default.Menu,
+                                Icons.Default.Create,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -224,7 +227,7 @@ fun AnalysisScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                Icons.Default.Info,
+                                Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(24.dp)
@@ -275,7 +278,7 @@ private fun LastReadingAlertCard(
 
     val icon = when (status) {
         ReadingStatus.LOW -> Icons.Default.Warning
-        ReadingStatus.HIGH -> Icons.Default.Warning
+        ReadingStatus.HIGH -> Icons.Default.Clear
         ReadingStatus.NORMAL -> Icons.Default.CheckCircle
     }
 
@@ -569,63 +572,48 @@ private fun TargetRangeItem(
 }
 
 @Composable
-private fun InsightRow(insight: String) {
+private fun InsightRow(insight: InsightItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
+            .padding(8.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        when {
-            insight.contains("⚠️") -> {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = Color(0xFFFFA726),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            insight.contains("✓") -> {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            insight.contains("📈") -> {
-                Icon(
-                    Icons.Default.KeyboardArrowUp,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            insight.contains("📉") -> {
-                Icon(
-                    Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            else -> {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
+        Icon(
+            Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier
+                .size(20.dp)
+                .padding(top = 2.dp)
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = insight.text,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (insight.citationUrl != null) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Text(
+                    text = "Learn more",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(insight.citationUrl))
+                            context.startActivity(intent)
+                        }
+                        .padding(4.dp),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall
                 )
             }
         }
-
-        Text(
-            text = insight,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 
